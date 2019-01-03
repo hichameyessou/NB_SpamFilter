@@ -6,6 +6,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 
 object SparkScala {
   val NUMBER_FEATURES = 2000
+  val TOPNWORDS = 5
 
   def main(args: Array[String]) {
 
@@ -78,7 +79,26 @@ object SparkScala {
 
     //Remove all chars apart from regex
     //val ssstep = sstep.map( x => x.replaceAll("[^a-zA-Z0-9]", ""))
+/*
 
-    return Data
+    text_file.flatMap(lambda line: line.split(" ")) \
+      .map(lambda word: (word, 1)) \
+    .reduceByKey(lambda a, b: a + b)
+* */
+
+    val step = Data
+      .flatMap(line => line.split(" "))
+      .map( word => new Tuple2(word, 1))
+      .reduceByKey((a,b) => a + b)
+      .map(item => item.swap)
+      .sortByKey(false)
+      .top(TOPNWORDS)
+
+    val sstep = Data
+      .flatMap(line => line.split(" "))
+      .filter(x => !(step contains x.split(",")))
+      .collect{ case i => i }
+
+    return sstep
   }
 }
