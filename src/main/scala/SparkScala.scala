@@ -4,6 +4,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.feature.{HashingTF, IDF}
 import org.apache.spark.mllib.regression.LabeledPoint
 
+import scala.util.Random
+
 object SparkScala {
   val NUMBER_FEATURES = 2000
   val TOPNWORDS = 0
@@ -46,9 +48,11 @@ object SparkScala {
 
     //Merge positive and negative training samples
     val training_data = positiveLabels.union(negativeLabels)
+    training_data.mapPartitions(Random.shuffle(_))
     training_data.cache()
     //Merge positive and negative test samples
     val test_data = positiveTESTLabels.union(negativeTESTLabels)
+    test_data.mapPartitions(Random.shuffle(_))
     test_data.cache()
 
     //Train Naive Bayes model
@@ -91,7 +95,7 @@ def evaluate(label : RDD[(Double, Double)] , data : RDD[_]) : Double = {
     //val ssstep = sstep.map( x => x.replaceAll("[^a-zA-Z0-9]", ""))
 
     /*Removing TopN most frequent words, lowers the accuracy
-    val step = Data
+    val sssstep = Data
       .flatMap(line => line.split(" "))
       .map( word => (word, 1))
       .reduceByKey((a,b) => a + b)
@@ -99,12 +103,12 @@ def evaluate(label : RDD[(Double, Double)] , data : RDD[_]) : Double = {
       .sortByKey(false)
       .top(TOPNWORDS)
 
-    val sstep = Data
+    val ssssstep = Data
       .flatMap(line => line.split(" "))
-      .filter(x => !(step.mkString(" ") contains x))
+      .filter(x => !(sssstep.mkString(" ") contains x))
       .collect{ case i => i }
     */
 
-    return Data
+    return Data//.map( x => x.replaceAll("""[\p{Punct}]""", ""))
   }
 }
