@@ -6,7 +6,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 
 object SparkScala {
   val NUMBER_FEATURES = 2000
-  val TOPNWORDS = 5
+  val TOPNWORDS = 0
 
   def main(args: Array[String]) {
 
@@ -57,10 +57,20 @@ object SparkScala {
     //Predictions on Test Data
     val predictionLabel = test_data.map(x => (model.predict(x.features), x.label))
     //Accuracy calculation on Test Data
-    val accuracy = 1.0 * predictionLabel.filter{case (x,y) => x == y}.count()/test_data.count()
+    val accuracy = evaluate(predictionLabel, test_data)
 
     println("Naive Bayes Accuracy: "+accuracy)
+
+    val spamCustomFeatures = hashingTF.transform("Dear, you have won $1,000,000!!! Send me your bank details ASAP".split(" "))
+    val noSpamCustomFeatures = hashingTF.transform("Hey, this is Hichame. I love running and taking pictures.".split(" "))
+
+    println("Spam case: "+model.predict(spamCustomFeatures))
+    println("No spam case: "+model.predict(noSpamCustomFeatures))
   }
+
+def evaluate(label : RDD[(Double, Double)] , data : RDD[_]) : Double = {
+   return 1.0 * label.filter{case (x,y) => x == y}.count()/data.count()
+}
 
   def preProcessData(Data: RDD[String]): RDD[String] = {
     /*
@@ -79,16 +89,11 @@ object SparkScala {
 
     //Remove all chars apart from regex
     //val ssstep = sstep.map( x => x.replaceAll("[^a-zA-Z0-9]", ""))
-/*
 
-    text_file.flatMap(lambda line: line.split(" ")) \
-      .map(lambda word: (word, 1)) \
-    .reduceByKey(lambda a, b: a + b)
-* */
-
+    /*Removing TopN most frequent words, lowers the accuracy
     val step = Data
       .flatMap(line => line.split(" "))
-      .map( word => new Tuple2(word, 1))
+      .map( word => (word, 1))
       .reduceByKey((a,b) => a + b)
       .map(item => item.swap)
       .sortByKey(false)
@@ -96,9 +101,10 @@ object SparkScala {
 
     val sstep = Data
       .flatMap(line => line.split(" "))
-      .filter(x => !(step contains x.split(",")))
+      .filter(x => !(step.mkString(" ") contains x))
       .collect{ case i => i }
+    */
 
-    return sstep
+    return Data
   }
 }
